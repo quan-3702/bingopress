@@ -1,0 +1,16 @@
+{
+  "name": "BingoPress - Bingo Card Maker & Caller",
+  "short_name": "BingoPress",
+  "description": "Print unique, numbered bingo cards – 75-ball, word bingo and 90-ball – and call the game on screen with big numbers read aloud. Private and offline.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#4338ca",
+  "theme_color": "#4338ca",
+  "categories": ["entertainment", "productivity"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

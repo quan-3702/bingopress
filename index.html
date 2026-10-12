@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BingoPress – Bingo Card Maker &amp; Caller</title>
+  <meta name="description" content="Print unique, numbered bingo cards (75-ball, word bingo, 90-ball) and call the game on screen with big numbers read aloud. Private and offline.">
+  <meta name="theme-color" content="#4338ca">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+  <style id="pageRule"></style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><img src="icon-192.png" alt="" width="30" height="30"><span>BingoPress</span></div>
+    <span class="tree-title"></span>
+    <div class="top-btns">
+      <button id="viewBtn" class="tb">🎱 Call the game</button>
+      <button id="printBtn" class="tb">🖨 Print cards</button>
+      <button id="moreBtn" class="tb">☰ More</button>
+      <button id="proBtn" class="pro-btn" hidden>★ Get Pro</button>
+    </div>
+    <div id="menu" class="menu" hidden>
+      <button id="exBtn">Fill in an example</button>
+      <button id="resetBtn" class="danger">Start again…</button>
+      <a href="help.html" target="_blank" rel="noopener">❓ How to use BingoPress</a>
+      <a href="mailto:thequan03072002@gmail.com?subject=BingoPress%20feedback">✉ Feedback &amp; support</a>
+      <a href="https://apps.microsoft.com/detail/9NRRLVDK5TH3" target="_blank" rel="noopener">More apps: NamePress name tags &amp; place cards</a>
+      <a href="https://apps.microsoft.com/detail/9MWSF3JMP1GJ" target="_blank" rel="noopener">More apps: PrintCal photo calendar maker</a>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="left">
+      <h2>1 · Kind of bingo</h2>
+      <div class="seg3" id="types">
+        <button data-t="b75">Numbers 1–75</button>
+        <button data-t="word">Word bingo</button>
+        <button data-t="b90">Numbers 1–90<span class="badge pro-only">PRO</span></button>
+      </div>
+      <p id="typeHint" class="hint"></p>
+      <div id="wordF">
+        <label class="field">Words or phrases – one on each line<textarea id="words" rows="7" placeholder="e.g. Pacifier&#10;Rattle&#10;Teddy bear"></textarea></label>
+        <p id="wordCount" class="hint"></p>
+        <div class="two">
+          <label class="field">Card size<select id="grid"><option value="5">5 × 5</option><option value="4">4 × 4</option><option value="3">3 × 3</option></select></label>
+          <label class="field">Ready-made list<select id="wordEx"><option value="">Choose…</option><option value="baby">Baby shower</option><option value="xmas">Christmas</option><option value="sight">Sight words (school)</option><option value="road">Road trip</option></select></label>
+        </div>
+      </div>
+
+      <h2>2 · Cards</h2>
+      <div class="two">
+        <label class="field"><span id="countLbl">How many cards</span><input id="count" type="number" min="1" max="500" step="1"></label>
+        <label class="field" id="perF">Cards on each page<select id="per"><option value="1">1 – largest</option><option value="2">2</option><option value="4">4</option></select></label>
+      </div>
+      <p id="countHint" class="hint"></p>
+      <label class="field">Heading on every card<input id="title" type="text" maxlength="40" placeholder="e.g. Family Bingo Night"></label>
+      <div class="two">
+        <label class="field">Colour<select id="theme"></select></label>
+        <label class="field">Paper<select id="paper"><option value="letter">US Letter</option><option value="a4">A4</option></select></label>
+      </div>
+      <div class="set-row"><span>Set number <strong id="setNo"></strong></span><button id="newSet" class="ghost">🔀 New set of cards</button></div>
+
+      <h2>3 · Also print</h2>
+      <label class="check"><input id="slips" type="checkbox"> Calling slips to cut out and draw from a bowl</label>
+      <label class="check"><input id="checklist" type="checkbox"> Caller's checklist to cross off</label>
+      <p id="pageInfo" class="hint"></p>
+      <p class="hint">Every card is different and has its own number. When someone calls “Bingo!”, open <strong>Call the game</strong> and type their card number to check it.</p>
+    </aside>
+
+    <section class="stage">
+      <div id="cardsView" class="view">
+        <div id="pager" class="pager"></div>
+        <div class="preview">
+          <button id="prev" class="nav" title="Previous page">‹</button>
+          <div id="page" style="height:100%;display:flex;align-items:center;justify-content:center;min-width:0;flex:1"></div>
+          <button id="next" class="nav" title="Next page">›</button>
+        </div>
+      </div>
+      <div id="callerView" class="view caller" hidden>
+        <div class="call-top">
+          <div id="ball" class="ball">–</div>
+          <div class="call-side">
+            <div id="callCount" class="call-count"></div>
+            <div class="call-btns">
+              <button id="callBtn" class="primary big">Call next</button>
+              <button id="undoBtn" class="ghost">↶ Undo</button>
+              <button id="newGame" class="ghost">New game</button>
+            </div>
+            <label class="check"><input id="speak" type="checkbox"> Read each call aloud</label>
+            <p class="hint">Tip: press the Space bar to call the next one.</p>
+          </div>
+        </div>
+        <div id="board" class="board"></div>
+        <div class="check-card">
+          <h3>Check a winning card</h3>
+          <div class="chk-row"><label class="field">Card number<input id="chkNo" type="number" min="1" step="1"></label><button id="chkBtn" class="primary">Check</button></div>
+          <div id="chkOut"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="proDialog" class="dlg">
+    <h2>BingoPress Pro</h2>
+    <p class="muted">One-time purchase. Yours forever on this Microsoft account. The free version never limits how often you print or call.</p>
+    <ul class="pro-list">
+      <li><strong>Up to 500 different cards at once</strong> <span class="muted">(Free: 8 at a time)</span></li>
+      <li><strong>90-ball tickets</strong> – the British style with 3 rows of 9</li>
+      <li>Great for church halls, clubs, schools and fundraisers</li>
+    </ul>
+    <p id="proMsg" class="pro-msg" hidden></p>
+    <div class="row-btns">
+      <button id="buyBtn" class="primary">Unlock Pro</button>
+      <button id="restoreBtn" class="ghost">Restore purchase</button>
+      <button id="closePro" class="ghost">Not now</button>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+  <div id="printArea"></div>
+  <script src="app.js"></script>
+</body>
+</html>
