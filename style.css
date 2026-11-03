@@ -175,3 +175,5 @@ textarea { min-height: 70px; resize: vertical; }
 .mini td.on { background: #f59e0b; color: #1f1503; }
 .mini td.free { background: var(--accent-2); }
 @media (prefers-color-scheme: dark) { .mini td.on, .board .bn.on { color: #1f1503; } }
+.fb-note { color: var(--muted); font-size: 13px; line-height: 1.45; margin: 8px 0 0; overflow-wrap: anywhere; }
+.fb-note a { color: var(--accent); }

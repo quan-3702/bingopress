@@ -10,7 +10,16 @@ let proAvailable = false; // Pro limits apply only when the Store actually sells
 proAvailable = true; // owner's rule: Pro is never free – free limits apply everywhere (website, Store, offline) until Pro is bought
 let proSku = PRO_SKU;
 let isPro = false;
-try { isPro = localStorage.getItem('bingopress-pro') === '1'; } catch (_) {}
+try { // the saved Pro flag is trusted only in the Store app, and only for 30 days after the Store last confirmed it
+  if ('getDigitalGoodsService' in window && localStorage.getItem('bingopress-pro') === '1') {
+    const ok = localStorage.getItem('bingopress-pro-ok'), t = Number(ok), now = Date.now();
+    if (ok === null) { localStorage.setItem('bingopress-pro-ok', String(now)); isPro = true; } // saved by an older version: counts as confirmed now, once
+    else isPro = t > 0 && t <= now && now - t < 30 * 864e5;
+  }
+} catch (_) {}
+function savePro(v) { // only called when the Store answered
+  try { if (v) { localStorage.setItem('bingopress-pro', '1'); localStorage.setItem('bingopress-pro-ok', String(Date.now())); } else { localStorage.removeItem('bingopress-pro'); localStorage.removeItem('bingopress-pro-ok'); } } catch (_) {}
+}
 const unlocked = () => isPro || !proAvailable;
 
 async function billing() {
@@ -19,7 +28,6 @@ async function billing() {
 }
 function setPro(v) {
   isPro = v;
-  try { localStorage.setItem('bingopress-pro', v ? '1' : '0'); } catch (_) {}
   const b = $('proBtn');
   b.textContent = v ? '★ Pro' : '★ Get Pro';
   b.classList.toggle('is-pro', v);
@@ -43,7 +51,7 @@ async function checkPro() {
     if (details[0]) { proSku = details[0].itemId; if (!PRO_IDS.includes(proSku)) PRO_IDS.push(proSku); }
     const list = await svc.listPurchases();
     const owned = list.some((p) => PRO_IDS.includes(p.itemId));
-    if (owned || details.length) { setPro(owned); return owned; }
+    if (owned || details.length) { savePro(owned); setPro(owned); return owned; }
     setPro(isPro); // Store did not answer (offline): keep what we knew
     return isPro;
   } catch (_) { return isPro; }
@@ -416,7 +424,8 @@ if (typeof document !== 'undefined') (function () {
 
   function renderPage() {
     const p = pgs[pageNo];
-    $('page').innerHTML = p.svg.replace(/ width="[\d.]+mm" height="[\d.]+mm"/, ` style="aspect-ratio:${p.w}/${p.h};width:min(100%, calc((100vh - 170px) * ${p.w / p.h}))"`);
+    const mark = st.type === 'b90' && !unlocked() ? `<text x="${f2(p.w / 2)}" y="${f2(p.h / 2)}" font-size="${f2(p.w / 5)}" font-weight="800" fill="#4338ca" fill-opacity=".16" text-anchor="middle" transform="rotate(-35 ${f2(p.w / 2)} ${f2(p.h / 2)})">PREVIEW</text></svg>` : '</svg>'; // 90-ball is Pro: the free preview is marked
+    $('page').innerHTML = p.svg.replace(/<\/svg>$/, mark).replace(/ width="[\d.]+mm" height="[\d.]+mm"/, ` style="aspect-ratio:${p.w}/${p.h};width:min(100%, calc((100vh - 170px) * ${p.w / p.h}))"`);
     const total = totalPages(), shown = pgs.length;
     $('pager').textContent = total > shown ? `Preview of page ${pageNo + 1} of the first ${shown} (all ${total} pages print)` : (shown > 1 ? `Page ${pageNo + 1} of ${shown}` : 'Preview');
     $('prev').disabled = pageNo === 0; $('next').disabled = pageNo >= pgs.length - 1;
