@@ -1,5 +1,5 @@
-const CACHE = 'bingopress-v1';
-const ASSETS = ['./', 'index.html', 'help.html', 'style.css', 'app.js', 'manifest.json', 'icon-192.png', 'icon-512.png'];
+const CACHE = 'bingopress-v2';
+const ASSETS = ['./', 'index.html', 'help.html', 'style.css', 'app.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png', 'privacy.html'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));

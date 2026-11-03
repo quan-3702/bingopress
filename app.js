@@ -7,6 +7,7 @@ const PRO_SKU = 'bingopress_pro';
 const PRO_IDS = [PRO_SKU];
 let STORE_URL = 'https://apps.microsoft.com/detail/9P52VVM0T97J';
 let proAvailable = false; // Pro limits apply only when the Store actually sells the add-on
+try { if ('getDigitalGoodsService' in window && localStorage.getItem('bingopress-proavail') === '1') proAvailable = true; } catch (_) {} // keep Pro limits when offline
 let proSku = PRO_SKU;
 let isPro = false;
 try { isPro = localStorage.getItem('bingopress-pro') === '1'; } catch (_) {}
@@ -26,17 +27,26 @@ function setPro(v) {
   document.body.classList.toggle('unlocked', unlocked());
   if (typeof renderAll === 'function') renderAll();
 }
+async function checkProAfterBuy() {
+  for (let i = 0; i < 6; i++) {
+    if (await checkPro()) return true;
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  proMessage('Thank you! If Pro is not unlocked within a minute, click “Restore purchase”.');
+  return false;
+}
 async function checkPro() {
   const svc = await billing();
   if (!svc) return false;
   try {
     const details = await svc.getDetails(PRO_IDS).catch(() => []);
-    proAvailable = details.length > 0;
+    if (details.length) { proAvailable = true; try { localStorage.setItem('bingopress-proavail', '1'); } catch (_) {} }
     if (details[0]) { proSku = details[0].itemId; if (!PRO_IDS.includes(proSku)) PRO_IDS.push(proSku); }
     const list = await svc.listPurchases();
     const owned = list.some((p) => PRO_IDS.includes(p.itemId));
-    setPro(owned);
-    return owned;
+    if (owned || details.length) { setPro(owned); return owned; }
+    setPro(isPro); // Store did not answer (offline): keep what we knew
+    return isPro;
   } catch (_) { return isPro; }
 }
 function proMessage(text) { const m = $('proMsg'); m.hidden = !text; m.textContent = text || ''; }
@@ -71,7 +81,7 @@ async function buyPro() {
     proMessage('Purchase could not be completed: ' + (e.message || e));
     return;
   }
-  if (await checkPro()) { proMessage('Thank you! Pro is unlocked. ★'); setTimeout(() => $('proDialog').close(), 1500); }
+  if (await checkProAfterBuy()) { proMessage('Thank you! Pro is unlocked. ★'); setTimeout(() => $('proDialog').close(), 1500); }
 }
 function needsPro(reason) {
   if (unlocked()) return false;
@@ -237,8 +247,10 @@ function cellFs(word, w, h, maxFs) {
   return fs;
 }
 function cellText(word, cx, cy, w, h, maxFs, fixedFs) {
-  const fs = fixedFs || cellFs(word, w, h, maxFs);
-  const ls = wrap(word, fs, w * 0.86, 600).slice(0, 3);
+  let fs = fixedFs || cellFs(word, w, h, maxFs);
+  let ls = wrap(word, fs, w * 0.86, 600).slice(0, 3);
+  const widest = Math.max(...ls.map((l) => textW(l, fs, 600)));
+  if (widest > w * 0.86) { fs *= w * 0.86 / widest; ls = wrap(word, fs, w * 0.86, 600).slice(0, 3); } // one very long word: shrink it so it stays inside its square
   const y0 = cy - (ls.length - 1) * fs * 1.12 / 2 + fs * 0.35;
   return ls.map((l, i) => T(l, cx, y0 + i * fs * 1.12, fs, ' font-weight="600"', 'middle')).join('');
 }
@@ -445,7 +457,7 @@ if (typeof document !== 'undefined') (function () {
     return `<span>${esc(v)}</span>`;
   }
   function renderCaller() {
-    const c = called(), last = c[c.length - 1], total = pool().length;
+    const all = pool(), inPool = new Set(all.map(String)), c = called().filter((v) => inPool.has(String(v))), last = c[c.length - 1], total = all.length; // calls of words that were removed from the list do not count
     const ball = $('ball'); ball.innerHTML = ballHtml(last);
     ball.classList.toggle('small-text', st.type === 'word' && last != null && String(last).length > 3);
     if (st.type === 'word' && last != null) ball.style.fontSize = String(last).length > 14 ? '22px' : String(last).length > 8 ? '28px' : '';
@@ -455,8 +467,8 @@ if (typeof document !== 'undefined') (function () {
     const on = new Set(c.map(String)), lastS = String(last);
     const cellB = (v) => `<div class="bn${on.has(String(v)) ? ' on' : ''}${String(v) === lastS ? ' last' : ''}">${esc(v)}</div>`;
     const b = $('board');
-    if (st.type === 'b75') { b.className = 'board'; b.style.gridTemplateColumns = '44px repeat(15, 1fr)'; b.innerHTML = [0, 1, 2, 3, 4].map((r) => `<div class="bl">${LETTERS[r]}</div>` + range(r * 15 + 1, r * 15 + 15).map(cellB).join('')).join(''); }
-    else if (st.type === 'b90') { b.className = 'board'; b.style.gridTemplateColumns = 'repeat(10, 1fr)'; b.innerHTML = range(1, 90).map(cellB).join(''); }
+    if (st.type === 'b75') { b.className = 'board'; b.style.gridTemplateColumns = 'minmax(24px, 44px) repeat(15, minmax(0, 1fr))'; b.innerHTML = [0, 1, 2, 3, 4].map((r) => `<div class="bl">${LETTERS[r]}</div>` + range(r * 15 + 1, r * 15 + 15).map(cellB).join('')).join(''); }
+    else if (st.type === 'b90') { b.className = 'board'; b.style.gridTemplateColumns = 'repeat(10, minmax(0, 1fr))'; b.innerHTML = range(1, 90).map(cellB).join(''); }
     else { b.className = 'board words'; b.style.gridTemplateColumns = ''; b.innerHTML = pool().map(cellB).join(''); }
   }
   function say(v) {
@@ -467,6 +479,7 @@ if (typeof document !== 'undefined') (function () {
   function showCheck() {
     const no = Number($('chkNo').value);
     if (!no) { $('chkOut').innerHTML = ''; return; }
+    if (!Number.isInteger(no) || no < 1) { $('chkOut').innerHTML = '<p class="verdict">Type the card number printed on the card (1, 2, 3…).</p>'; return; }
     if (no > MAX_CARDS) { $('chkOut').innerHTML = `<p class="verdict">There is no card ${no}.</p>`; return; }
     if (no > cardCount()) { $('chkOut').innerHTML = `<p class="verdict">Card ${no} was not printed – this set has ${cardCount()} cards.</p>`; return; }
     const r = checkCard(no);
@@ -525,6 +538,7 @@ if (typeof document !== 'undefined') (function () {
   $('restoreBtn').onclick = async () => { proMessage((await checkPro()) ? 'Pro is unlocked. ★' : 'No purchase was found on this Microsoft account.'); };
   $('closePro').onclick = () => $('proDialog').close();
   window.addEventListener('resize', () => { if (st.view !== 'caller') renderPage(); });
+  window.addEventListener('pagehide', () => { clearTimeout(saveTimer); try { localStorage.setItem('bingopress', JSON.stringify(st)); } catch (_) {} });
   setPro(isPro);
   checkPro();
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
