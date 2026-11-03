@@ -1,4 +1,4 @@
-const CACHE = 'bingopress-v6';
+const CACHE = 'bingopress-v7';
 const ASSETS = ['./', 'index.html', 'help.html', 'style.css', 'app.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png', 'privacy.html'];
 
 self.addEventListener('install', (e) => {
